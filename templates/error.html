@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Error · Class Analyzer{% endblock %}
+{% block content %}
+<div class="hero"><h1>⚠ Error</h1><p>Algo fallo al procesar la solicitud.</p></div>
+<div class="alert bad">{{ message }}</div>
+<a href="/" class="btn ghost">← Volver al analizador</a>
+{% endblock %}

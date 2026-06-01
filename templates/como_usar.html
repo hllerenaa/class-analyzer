@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Como usar · Class Analyzer{% endblock %}
+{% block content %}
+
+<div class="hero">
+  <h1>📖 Como usar</h1>
+  <p>Instala, configura el proveedor de IA y analiza tu primera clase.</p>
+</div>
+
+<div class="grid">
+  {% for icon, title, body in content.HOWTO_CARDS %}
+  <div class="card"><h3>{{ icon }} {{ title }}</h3><p>{{ body }}</p></div>
+  {% endfor %}
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h3>🛠️ Instalacion</h3>
+    <ol class="steps">{% for s in content.HOWTO_INSTALL %}<li>{{ s }}</li>{% endfor %}</ol>
+  </div>
+  <div class="card">
+    <h3>▶️ Flujo de uso</h3>
+    <ol class="steps">{% for s in content.HOWTO_USE %}<li>{{ s }}</li>{% endfor %}</ol>
+  </div>
+</div>
+
+<div class="note">El video NUNCA se envia a la IA: la deteccion es local (ffmpeg) y la IA
+solo redacta el reporte a partir de las metricas en texto.</div>
+
+<details>
+  <summary>Comandos de instalacion (copiar/pegar)</summary>
+<pre>winget install Gyan.FFmpeg        # Windows (Linux: sudo apt install ffmpeg)
+pip install -r requirements.txt
+uvicorn web.main:app --reload     # arranca el servidor en http://127.0.0.1:8000
+
+# IA local gratis (opcional):
+winget install Ollama.Ollama
+ollama pull llama3.2:3b</pre>
+</details>
+
+<p class="muted">Repo: https://github.com/hllerenaa/class-analyzer · Guias: EJECUTAR.md · DEPLOYMENT.md · GUIA_IA.md</p>
+
+{% endblock %}

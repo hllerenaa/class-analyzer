@@ -25,10 +25,17 @@ pip install -r requirements.txt
 
 ## Usar
 
-UI web:
+Base de datos (PostgreSQL via Docker):
 ```
-streamlit run app.py
+copy credentials.example.json credentials.json    # Linux: cp
+docker compose -f docker-compose.postgres.yml up -d
 ```
+UI web (FastAPI + plantillas Jinja2):
+```
+uvicorn views:app --reload      # http://127.0.0.1:8000
+```
+Paginas: `/` Analizador · `/como-usar` · `/docs-tokens`. Config, tokens e
+historial se guardan en **PostgreSQL** (conexion en `credentials.json`).
 
 CLI (solo deteccion, sin IA):
 ```

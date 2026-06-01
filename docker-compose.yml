@@ -1,4 +1,23 @@
+# Todo-en-uno: app + Ollama + PostgreSQL.
+#   docker compose up -d --build
+#   docker compose exec ollama ollama pull llama3.2:3b
+# La app lee la conexion a la BD de las variables DB_* (override de credentials.json).
 services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: class_analyzer
+      POSTGRES_PASSWORD: cambia_esto
+      POSTGRES_DB: class_analyzer
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U class_analyzer -d class_analyzer"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   ollama:
     image: ollama/ollama:latest
     restart: unless-stopped
@@ -11,12 +30,22 @@ services:
     build: .
     restart: unless-stopped
     depends_on:
-      - ollama
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_started
     environment:
-      - OLLAMA_BASE_URL=http://ollama:11434
       - PYTHONIOENCODING=utf-8
+      # Conexion a PostgreSQL (override de credentials.json)
+      - DB_IP=db
+      - DB_PORT=5432
+      - DB_USERNAME=class_analyzer
+      - DB_PASSWORD=cambia_esto
+      - DB_NAME=class_analyzer
+      # En "Docs y Tokens" usa Base URL http://ollama:11434 para Ollama
     ports:
-      - "127.0.0.1:8501:8501"
+      - "127.0.0.1:8000:8000"
 
 volumes:
   ollama:
+  pgdata:

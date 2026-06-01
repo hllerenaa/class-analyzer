@@ -11,14 +11,15 @@ las dependencias y requisitos.
 |-------------|----------|-------------|
 | **Python 3.10–3.13** | Ejecutar la app | ✅ |
 | **ffmpeg + ffprobe** | Audio (VAD) y frames (movimiento) | ✅ |
-| **pip packages** | streamlit, numpy, Pillow, requests, yt-dlp | ✅ |
+| **pip packages** | fastapi, uvicorn, jinja2, python-multipart, sqlalchemy, psycopg, numpy, Pillow, requests, yt-dlp | ✅ |
+| **PostgreSQL** | Guarda config, tokens e historial | ✅ (Docker: `docker-compose.postgres.yml`) |
 | **Ollama + modelo** | IA local gratis ($0) | ⬜ opcional |
 | **faster-whisper** | Transcripción local | ⬜ opcional |
 | Token Claude/Gemini/DeepSeek | IA en la nube | ⬜ alternativa a Ollama |
 
 Dependencias Python (en `requirements.txt`):
 ```
-streamlit, numpy, Pillow, requests, yt-dlp
+fastapi, uvicorn[standard], jinja2, python-multipart, sqlalchemy, psycopg[binary], numpy, Pillow, requests, yt-dlp
 # opcional: faster-whisper
 ```
 
@@ -57,13 +58,25 @@ ollama pull llama3.2:3b
 ```
 El servidor queda en `http://localhost:11434` (arranca solo).
 
-### 2.5 Ejecutar la interfaz web
+### 2.5 Base de datos PostgreSQL (Docker)
+La app guarda config, tokens e historial en **PostgreSQL**. Levantala con Docker:
 ```powershell
-streamlit run app.py
+copy credentials.example.json credentials.json   # ajusta password si quieres
+docker compose -f docker-compose.postgres.yml up -d
 ```
-Abre http://localhost:8501
+`credentials.json` define la conexion (`ip`, `port`, `username`, `password`, `dbname`)
+y DEBE coincidir con las variables del compose. Las TABLAS se crean solas al iniciar la app.
+> ¿Sin Docker? Instala PostgreSQL nativo, crea el rol y la BD con esos mismos
+> datos:  `CREATE ROLE class_analyzer LOGIN PASSWORD 'cambia_esto';`
+> `CREATE DATABASE class_analyzer OWNER class_analyzer;`
 
-### 2.6 Ejecutar por línea de comandos (sin UI)
+### 2.6 Ejecutar la interfaz web (FastAPI)
+```powershell
+uvicorn views:app --reload
+```
+Abre http://localhost:8000 · Paginas: `/` (Analizador), `/como-usar`, `/docs-tokens`.
+
+### 2.7 Ejecutar por línea de comandos (sin UI)
 ```powershell
 # solo detección (sin IA, $0)
 python cli.py "C:\ruta\clase.mp4"
@@ -78,12 +91,13 @@ python cli.py "https://www.youtube.com/watch?v=XXXX" --ai ollama
 python cli.py "C:\ruta\clase.mp4" --ai gemini --key TU_TOKEN
 ```
 
-### 2.7 Validar que todo corre
+### 2.8 Validar que todo corre
 ```powershell
 ffmpeg -version            # ffmpeg OK
 ollama list                # modelos instalados
 curl http://localhost:11434/api/version   # Ollama vivo
-# la app: navegador en http://localhost:8501
+docker compose -f docker-compose.postgres.yml ps   # PostgreSQL arriba
+# la app: navegador en http://localhost:8000
 ```
 
 ---
@@ -112,12 +126,13 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt faster-whisper
 ollama pull llama3.2:3b
 ```
-- Servicio persistente: **systemd** (`class-analyzer.service`).
-- Reverse proxy + WebSockets: **Nginx**.
+- Servicio persistente: **systemd** (`class-analyzer.service`) ejecutando
+  `uvicorn views:app --host 0.0.0.0 --port 8000` (o `gunicorn -k uvicorn.workers.UvicornWorker`).
+- Reverse proxy: **Nginx**.
 - HTTPS gratis: **certbot** (Let's Encrypt).
 
 ### 4.2 Windows Server
-- Servicio 24/7: **NSSM** apuntando a `streamlit run app.py`.
+- Servicio 24/7: **NSSM** apuntando a `uvicorn views:app --host 0.0.0.0 --port 8000`.
 - Reverse proxy + HTTPS: **IIS (ARR + URL Rewrite)** o **Caddy**.
 - Ollama se instala como servicio Windows (auto-arranque).
 
@@ -128,18 +143,33 @@ docker compose exec ollama ollama pull llama3.2:3b
 ```
 Incluye app + Ollama. Ver `Dockerfile` y `docker-compose.yml`.
 
+> ¿Ollama en un servidor aparte (o con GPU) y conectarlo por **Base URL**?
+> Guia dedicada en `DEPLOYMENT.md` §7 (Docker, acceso remoto seguro, firewall).
+
 ---
 
 ## 5. Estructura del proyecto (MVC)
 
 ```
 class-analyzer/
-  app.py              CONTROLADOR (Streamlit): conecta vistas + modelo
+  views/              VISTAS/URLs (FastAPI). App = views:app
+    __init__.py         crea `app`, monta /static, incluye los routers
+    base.py             plantillas Jinja2 + rutas base (compartido)
+    analizador.py       ROUTER: /  y  /analizar
+    paginas.py          ROUTER: /como-usar, /docs-tokens, /guardar-credenciales
+    historial.py        ROUTER: /historial/...
+    content.py          CONTENIDO (textos, links docs, PROVIDER_INFO, HOWTO_*) — datos puros
+  models/             MODELO ORM (SQLAlchemy)
+    db.py               engine PostgreSQL, sesiones, Base, credenciales, create_all
+    setting.py          modelo Setting
+    provider_cred.py    modelo ProviderCred
+    history.py          modelo History
+  templates/          PLANTILLAS Jinja2 (.html): base, index, resultados,
+                      como_usar, docs_tokens, historial_detalle, error
+  static/css/styles.css  ESTILO (todo el diseno en un solo CSS, nivel raiz)
   cli.py              CONTROLADOR (línea de comandos)
-  ui/                 PRESENTACIÓN
-    templates.py        PLANTILLAS (texto, markdown, constantes)
-    views.py            VISTAS (funciones view_* que renderizan)
-  analyzer/           MODELO / lógica
+  analyzer/           LÓGICA de dominio
+    store.py            DAO sobre el ORM (config, tokens, historial)
     downloader.py       descarga URL (yt-dlp)
     ffmpeg_util.py      localizar ffmpeg
     video_probe.py      metadatos
@@ -149,17 +179,20 @@ class-analyzer/
     transcribe.py       whisper (opcional)
     ai_providers.py     Claude/Gemini/DeepSeek/Ollama
     pipeline.py         orquestación
+  credentials.json    conexion PostgreSQL (ip/port/username/password/dbname) — ignorado en git
+  credentials.example.json  plantilla de credenciales
   requirements.txt    dependencias
-  Dockerfile / docker-compose.yml
+  Dockerfile / docker-compose.yml / docker-compose.ollama.yml / docker-compose.postgres.yml
   README.md / EJECUTAR.md / DEPLOYMENT.md / GUIA_IA.md
 ```
 
-- **Vistas** = `ui/views.py` → funciones `view_header`, `view_sidebar_config`,
-  `view_input`, `view_results`, `view_provider_help`.
-- **Plantillas** = `ui/templates.py` → `APP_TITLE`, `HELP_MD`, `PROVIDER_INFO`,
-  `MODEL_HINTS`.
-- **Controlador** = `app.py` (web) y `cli.py` (terminal).
-- **Modelo** = paquete `analyzer/`.
+- **Vistas/URLs** = paquete `views/` (un **router** por seccion) + `templates/*.html`.
+- **Router de rutas** = `views/analizador.py`, `views/paginas.py`, `views/historial.py`
+  (cada uno expone `router = APIRouter()`); `views/__init__.py` los ensambla en `app`.
+- **Estilo** = `static/css/styles.css` (un solo archivo, a nivel raiz).
+- **Contenido** = `views/content.py` → `PROVIDER_INFO`, `MODEL_HINTS`, `HOWTO_*`.
+- **Modelo** = paquete `models/` (SQLAlchemy ORM, un archivo por entidad, crea el esquema) + `analyzer/store.py` (DAO).
+- **CLI** = `cli.py` (terminal, sin cambios).
 
 ---
 

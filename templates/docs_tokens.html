@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Docs y Tokens · Class Analyzer{% endblock %}
+{% block content %}
+
+<div class="hero">
+  <h1>🔑 Documentacion y Tokens</h1>
+  <p>Links oficiales de cada proveedor de IA y configuracion de credenciales. Se guardan localmente en SQLite.</p>
+</div>
+
+{% if saved %}<div class="alert ok">Credenciales de '{{ saved }}' guardadas en SQLite.</div>{% endif %}
+
+<h2 class="section-title">Proveedores de IA</h2>
+<div class="grid">
+  {% for p in content.PROVIDERS %}
+  {% set info = content.PROVIDER_INFO[p] %}
+  <div class="card">
+    <h3>{{ info.nombre }}</h3>
+    <p>
+      {% if info.gratis %}<span class="badge free">GRATIS</span>{% else %}<span class="badge paid">DE PAGO</span>{% endif %}
+    </p>
+    <ol>{% for paso in info.pasos %}<li>{{ paso }}</li>{% endfor %}</ol>
+    <div class="links">
+      {% if not info.nombre.startswith('Ollama') %}<a href="{{ info.token_url }}" target="_blank">🔑 Generar token</a>{% endif %}
+      <a href="{{ info.docs_url }}" target="_blank">📄 Docs API</a>
+      <a href="{{ info.modelos_url }}" target="_blank">📦 Modelos</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<h2 class="section-title">Configurar token / credenciales</h2>
+<form method="post" action="/guardar-credenciales">
+  <div class="form-grid">
+    <div class="field">
+      <label>Proveedor</label>
+      <select name="provider">
+        {% for p in content.PROVIDERS %}
+        <option value="{{ p }}" {{ 'selected' if p == sel_provider else '' }}>{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>API Token</label>
+      <input type="password" name="api_key" value="{{ creds.api_key }}">
+    </div>
+    <div class="field">
+      <label>Modelo</label>
+      <input type="text" name="model" value="{{ creds.model }}">
+    </div>
+    <div class="field">
+      <label>Base URL (opcional)</label>
+      <input type="text" name="base_url" value="{{ creds.base_url }}">
+    </div>
+  </div>
+  <div class="field checkbox"><input type="checkbox" name="set_active" checked> <label style="margin:0">Marcar como proveedor activo del Analizador</label></div>
+  <button class="btn" type="submit">💾 Guardar credenciales</button>
+  <p class="muted">Ollama es local y NO necesita token (solo modelo y, si es remoto, Base URL).</p>
+</form>
+
+{% if saved_all %}
+<details>
+  <summary>Credenciales guardadas (sin mostrar el token)</summary>
+  <table>
+    <thead><tr><th>Proveedor</th><th>Token</th><th>Modelo</th><th>Base URL</th></tr></thead>
+    <tbody>
+    {% for p, d in saved_all.items() %}
+      <tr><td>{{ p }}</td><td>{{ '✅ guardado' if d.api_key else '—' }}</td><td>{{ d.model or '—' }}</td><td>{{ d.base_url or '—' }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</details>
+{% endif %}
+
+{% endblock %}

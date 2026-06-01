@@ -1,0 +1,31 @@
+# Ollama SOLO (sin la app), para levantar en un servidor dedicado.
+# Uso:
+#   docker compose -f docker-compose.ollama.yml up -d
+#   docker compose -f docker-compose.ollama.yml exec ollama ollama pull llama3.2:3b
+#   curl http://127.0.0.1:11434/api/version
+#
+# La app se conecta cambiando la Base URL en la pagina "Docs y Tokens":
+#   - mismo host:     http://127.0.0.1:11434
+#   - servidor remoto: http://IP_DEL_SERVIDOR:11434  (protege el puerto, ver DEPLOYMENT.md §7.3)
+#
+# GPU NVIDIA: descomenta el bloque "deploy" (requiere nvidia-container-toolkit en el host).
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    volumes:
+      - ollama:/root/.ollama
+    ports:
+      # Solo localhost por defecto. Para acceso remoto NO uses "0.0.0.0":
+      # usa tunel SSH o red privada (DEPLOYMENT.md §7.3).
+      - "127.0.0.1:11434:11434"
+    # --- GPU (opcional) ---
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: ["gpu"]
+
+volumes:
+  ollama:

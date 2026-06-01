@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Analizador · Class Analyzer{% endblock %}
+{% block content %}
+
+<div class="hero">
+  <h1>{{ content.APP_TITLE }}</h1>
+  <p>{{ content.APP_CAPTION }}</p>
+</div>
+
+{% if saved %}<div class="alert ok">Configuracion guardada en SQLite.</div>{% endif %}
+
+<form method="post" action="/analizar" enctype="multipart/form-data">
+
+  <h2 class="section-title">1. Video de la clase</h2>
+  <div class="field">
+    <label>Ruta local o URL</label>
+    <input type="text" name="source"
+           placeholder="C:\...\clase.mp4  |  https://youtube.com/watch?v=...">
+    <p class="muted">Acepta archivo local o URL (YouTube/Drive). SharePoint/Teams: descarga manual.</p>
+  </div>
+  <div class="field">
+    <label>...o sube un archivo</label>
+    <input type="file" name="upload" accept=".mp4,.mov,.mkv,.avi">
+  </div>
+
+  <h2 class="section-title">2. Configuracion de IA</h2>
+  <div class="form-grid">
+    <div class="field">
+      <label>Proveedor de IA</label>
+      <select name="provider">
+        {% for p in content.PROVIDERS %}
+        <option value="{{ p }}" {{ 'selected' if p == cfg.provider else '' }}>{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>API Token</label>
+      <input type="password" name="api_key" value="{{ cfg.api_key }}">
+    </div>
+    <div class="field">
+      <label>Modelo</label>
+      <input type="text" name="model" value="{{ cfg.model }}">
+    </div>
+    <div class="field">
+      <label>Base URL (opcional)</label>
+      <input type="text" name="base_url" value="{{ cfg.base_url }}">
+    </div>
+    <div class="field">
+      <label>Carpeta ffmpeg (opcional)</label>
+      <input type="text" name="ffmpeg_dir" value="{{ cfg.ffmpeg_dir }}">
+    </div>
+  </div>
+  <p class="muted">Gestiona y guarda tokens por proveedor en <a href="/docs-tokens">Docs y Tokens</a>.</p>
+
+  <h2 class="section-title">3. Umbrales de deteccion</h2>
+  <div class="form-grid">
+    <div class="field"><label>Min minutos para flag</label>
+      <input type="number" name="min_flag_minutes" min="1" max="120" value="{{ thr.min_flag_minutes }}"></div>
+    <div class="field"><label>Umbral movimiento (playback)</label>
+      <input type="number" step="0.5" name="motion_playback" value="{{ thr.motion_playback }}"></div>
+    <div class="field"><label>Voz docente baja (&lt;)</label>
+      <input type="number" step="0.01" min="0" max="1" name="speech_ratio_low" value="{{ thr.speech_ratio_low }}"></div>
+    <div class="field"><label>Umbral silencio (dB)</label>
+      <input type="number" name="silence_noise_db" min="-60" max="-10" value="{{ thr.silence_noise_db }}"></div>
+  </div>
+
+  <div class="field checkbox"><input type="checkbox" name="ai_enabled" checked> <label style="margin:0">Generar reporte con IA</label></div>
+  <div class="field checkbox"><input type="checkbox" name="want_transcript"> <label style="margin:0">Transcribir (faster-whisper, mas lento)</label></div>
+  <div class="field checkbox"><input type="checkbox" name="save_config" checked> <label style="margin:0">Guardar esta configuracion en SQLite</label></div>
+
+  <h2 class="section-title">4. Analizar</h2>
+  <button type="submit" class="btn block">▶ Analizar clase</button>
+  <p class="muted">El procesamiento es sincrono: puede tardar segun la duracion del video.</p>
+</form>
+
+<h2 class="section-title">🗂 Historial ({{ history|length }})</h2>
+{% if history %}
+<form method="post" action="/historial/vaciar" style="margin-bottom:10px">
+  <button class="btn danger" type="submit">🗑 Vaciar historial</button>
+</form>
+<table>
+  <thead><tr><th>#</th><th>Fecha</th><th>Fuente</th><th>Min</th><th>Voz %</th><th>Flags</th><th></th></tr></thead>
+  <tbody>
+  {% for r in history %}
+    <tr>
+      <td>{{ r.id }}</td>
+      <td>{{ r.created_at }}</td>
+      <td>{{ (r.source or '')[:50] }}</td>
+      <td>{{ r.duration_min }}</td>
+      <td>{{ ((r.speech_ratio or 0) * 100)|round|int }}</td>
+      <td>{{ r.num_flags }}</td>
+      <td><a href="/historial/{{ r.id }}">ver</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">Aun no hay analisis guardados.</p>
+{% endif %}
+
+{% endblock %}

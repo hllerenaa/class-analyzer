@@ -7,6 +7,9 @@ APP_CAPTION = (
     "Detecta p.ej. >10 min de video compartido sin clase activa."
 )
 
+# Orden de proveedores en selects/paginas
+PROVIDERS = ["ollama", "claude", "gemini", "deepseek"]
+
 # Modelo sugerido por proveedor
 MODEL_HINTS = {
     "claude": "claude-3-5-haiku-latest",
@@ -107,3 +110,36 @@ ollama pull llama3.2:3b
 ```
 Server en `http://localhost:11434`. En el sidebar elige `ollama`, sin token.
 """
+
+# --- Contenido estructurado para la pagina "Como usar" -------------------
+
+HOWTO_INSTALL = [
+    "Instala ffmpeg:  winget install Gyan.FFmpeg  (Linux: sudo apt install ffmpeg)",
+    "Instala dependencias:  pip install -r requirements.txt",
+    "Arranca la app:  streamlit run app.py",
+    "(Opcional) IA local gratis:  winget install Ollama.Ollama  &&  ollama pull llama3.2:3b",
+]
+
+HOWTO_USE = [
+    "Ve a 'Docs y Tokens' y guarda el proveedor de IA y su token (Ollama no necesita token).",
+    "Vuelve a 'Analizador' y pega una ruta local o una URL de video (o sube un archivo).",
+    "Ajusta los umbrales en el panel lateral si lo necesitas (o deja los valores por defecto).",
+    "Pulsa 'Analizar clase' y espera el procesamiento (probe -> audio -> movimiento -> reglas -> IA).",
+    "Revisa metricas, segmentos marcados y el reporte IA. Cada analisis queda en el historial.",
+]
+
+# Que hace cada capa (tarjetas en "Como usar")
+HOWTO_CARDS = [
+    ("🎯", "Que detecta",
+     "Debilidades en una grabacion de clase. Caso clave: >10 min de video "
+     "compartido en pantalla sin clase activa del docente."),
+    ("🔍", "Deteccion local ($0)",
+     "ffmpeg + numpy: VAD por silencio (cuanto habla el docente), movimiento "
+     "entre frames (playback de video) y un motor de reglas que marca segmentos."),
+    ("🤖", "IA solo para el reporte",
+     "El proveedor de IA solo redacta el reporte sobre las senales ya detectadas. "
+     "El video NUNCA se envia a la IA: solo texto."),
+    ("📥", "Fuentes aceptadas",
+     "Archivo local, o URL de YouTube/Google Drive y ~1000 sitios (yt-dlp). "
+     "SharePoint/Teams/OneDrive requieren login: descarga manual y usa la ruta."),
+]

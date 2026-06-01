@@ -1,0 +1,33 @@
+# PostgreSQL SOLO, para crear/levantar la base de datos del proyecto.
+# Uso:
+#   docker compose -f docker-compose.postgres.yml up -d
+#   # comprobar:
+#   docker compose -f docker-compose.postgres.yml exec db psql -U class_analyzer -d class_analyzer -c "\dt"
+#
+# IMPORTANTE: estos valores DEBEN coincidir con credentials.json
+#   (username -> POSTGRES_USER, password -> POSTGRES_PASSWORD, dbname -> POSTGRES_DB,
+#    ip=127.0.0.1, port=5432). Cambia la password en ambos sitios.
+#
+# La imagen crea la base de datos POSTGRES_DB en el primer arranque.
+# Las TABLAS las crea la app sola (store.init()) al iniciar.
+services:
+  db:
+    image: postgres:16
+    container_name: class_analyzer_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: class_analyzer
+      POSTGRES_PASSWORD: cambia_esto
+      POSTGRES_DB: class_analyzer
+    ports:
+      - "127.0.0.1:5432:5432"   # solo localhost; remoto -> tunel SSH / red privada
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U class_analyzer -d class_analyzer"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

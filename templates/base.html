@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Class Analyzer{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
+</head>
+<body>
+  <nav class="nav">
+    <span class="brand">🎓 Class Analyzer</span>
+    <a href="/" class="{{ 'active' if active == 'home' else '' }}">Analizador</a>
+    <a href="/como-usar" class="{{ 'active' if active == 'howto' else '' }}">Como usar</a>
+    <a href="/docs-tokens" class="{{ 'active' if active == 'docs' else '' }}">Docs y Tokens</a>
+  </nav>
+  <main class="wrap">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

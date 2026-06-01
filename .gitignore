@@ -7,8 +7,15 @@ env/
 
 # Config con secretos
 config.json
+credentials.json
 *.key
 .env
+
+# Base de datos (PostgreSQL en Docker: volumen pgdata; nada local que ignorar)
+data/
+*.db
+*.sqlite
+*.sqlite3
 
 # Datos / salidas
 *.mp4

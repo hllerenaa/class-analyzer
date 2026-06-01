@@ -46,7 +46,7 @@ ollama pull llama3.1:8b      # ~4.7 GB
 Ver catálogo: https://ollama.com/library
 
 ### Conectar a Class Analyzer
-En el sidebar:
+En la pagina **Docs y Tokens** (`/docs-tokens`):
 - **Proveedor**: `ollama`
 - **API Token**: vacío (deshabilitado)
 - **Modelo**: `llama3.2:3b`
@@ -130,7 +130,7 @@ pip install -r requirements.txt
 pip install faster-whisper          # opcional: transcript local
 
 # 4) Correr
-streamlit run app.py                # → http://localhost:8501
+uvicorn views:app --reload       # → http://localhost:8000
 ```
 Sin UI (CLI):
 ```bash

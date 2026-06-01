@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Historial #{{ rec.id }} · Class Analyzer{% endblock %}
+{% block content %}
+
+<div class="hero">
+  <h1>🗂 Analisis #{{ rec.id }}</h1>
+  <p>{{ rec.source }} · {{ rec.created_at }}</p>
+</div>
+
+<a href="/" class="btn ghost">← Volver</a>
+
+<div class="grid" style="margin-top:18px">
+  <div class="metric"><div class="v">{{ rec.duration_min }} min</div><div class="l">Duracion</div></div>
+  <div class="metric"><div class="v">{{ ((rec.speech_ratio or 0)*100)|round|int }}%</div><div class="l">Voz activa</div></div>
+  <div class="metric"><div class="v">{{ ((rec.playback_ratio or 0)*100)|round|int }}%</div><div class="l">Playback</div></div>
+  <div class="metric"><div class="v">{{ rec.num_flags }}</div><div class="l">Flags</div></div>
+</div>
+
+{% if rec.report %}
+<h2 class="section-title">📋 Reporte IA</h2>
+<div class="report">{{ rec.report }}</div>
+<p>
+  <a href="/historial/{{ rec.id }}/reporte" class="btn ghost">⬇ Reporte (.md)</a>
+  <a href="/historial/{{ rec.id }}/json" class="btn ghost">⬇ JSON</a>
+</p>
+{% else %}
+<p><a href="/historial/{{ rec.id }}/json" class="btn ghost">⬇ JSON crudo</a></p>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Resultados · Class Analyzer{% endblock %}
+{% block content %}
+
+<div class="hero">
+  <h1>📊 Resultados del analisis</h1>
+  <p>{{ source }}</p>
+</div>
+
+<a href="/" class="btn ghost">← Nuevo analisis</a>
+
+<h2 class="section-title">Metricas</h2>
+{% set s = result.summary %}
+{% set speech_pct = (s.speech_ratio * 100)|round|int %}
+<div class="grid">
+  <div class="metric"><div class="v">{{ s.duration_min }} min</div><div class="l">Duracion</div></div>
+  <div class="metric {{ 'bad' if speech_pct < 15 else 'ok' }}"><div class="v">{{ speech_pct }}%</div><div class="l">Voz activa</div></div>
+  <div class="metric"><div class="v">{{ (s.playback_ratio * 100)|round|int }}%</div><div class="l">Playback video</div></div>
+  <div class="metric {{ 'bad' if s.num_flags else 'ok' }}"><div class="v">{{ s.num_flags }}</div><div class="l">Flags</div></div>
+</div>
+
+{% if result.flags %}
+<div class="alert bad">⚠ {{ s.num_flags }} segmento(s) sospechoso(s) — {{ s.flagged_minutes }} min</div>
+<table>
+  <thead><tr><th>Tipo</th><th>Inicio</th><th>Fin</th><th>Min</th><th>Voz %</th></tr></thead>
+  <tbody>
+  {% for f in result.flags %}
+    <tr>
+      <td>{{ f.type }}</td>
+      <td>{{ '%02d:%02d'|format(f.start // 60, f.start % 60) }}</td>
+      <td>{{ '%02d:%02d'|format(f.end // 60, f.end % 60) }}</td>
+      <td>{{ f.duration_sec // 60 }}</td>
+      <td>{{ (f.speech_ratio * 100)|round|int }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="alert ok">Sin segmentos de 'video sin clase' detectados.</div>
+{% endif %}
+
+{% if result.report %}
+<h2 class="section-title">📋 Reporte IA</h2>
+<div class="report">{{ result.report }}</div>
+{% if history_id %}<p><a href="/historial/{{ history_id }}/reporte" class="btn ghost">⬇ Descargar reporte (.md)</a></p>{% endif %}
+{% endif %}
+
+{% if result.transcript %}
+<details><summary>Ver transcripcion</summary><pre>{{ result.transcript }}</pre></details>
+{% endif %}
+
+{% if history_id %}
+<p class="muted">Guardado en historial con id {{ history_id }}.
+<a href="/historial/{{ history_id }}/json">⬇ Descargar JSON crudo</a></p>
+{% endif %}
+
+{% endblock %}
