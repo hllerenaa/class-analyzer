@@ -30,7 +30,64 @@ MODEL_HINTS = {
     "claude": "claude-3-5-haiku-latest",
     "gemini": "gemini-1.5-flash",
     "deepseek": "deepseek-chat",
-    "ollama": "llama3.1",
+    "ollama": "llama3.2:3b",
+}
+
+# Info por proveedor: donde sacar token + docs + como conectar.
+PROVIDER_INFO = {
+    "claude": {
+        "nombre": "Anthropic Claude",
+        "token_url": "https://console.anthropic.com/settings/keys",
+        "docs_url": "https://docs.anthropic.com/en/api/getting-started",
+        "modelos_url": "https://docs.anthropic.com/en/docs/about-claude/models",
+        "pasos": [
+            "Crea cuenta en console.anthropic.com",
+            "Settings → API Keys → Create Key",
+            "Copia la key (sk-ant-...) y pegala en 'API Token'",
+            "Carga saldo en Billing (de pago, ~\\$0.02/clase con Haiku)",
+        ],
+        "gratis": False,
+    },
+    "gemini": {
+        "nombre": "Google Gemini",
+        "token_url": "https://aistudio.google.com/app/apikey",
+        "docs_url": "https://ai.google.dev/gemini-api/docs",
+        "modelos_url": "https://ai.google.dev/gemini-api/docs/models",
+        "pasos": [
+            "Entra a aistudio.google.com con tu cuenta Google",
+            "Get API key → Create API key",
+            "Copia la key y pegala en 'API Token'",
+            "Tiene capa gratuita con limites de uso",
+        ],
+        "gratis": True,
+    },
+    "deepseek": {
+        "nombre": "DeepSeek",
+        "token_url": "https://platform.deepseek.com/api_keys",
+        "docs_url": "https://api-docs.deepseek.com/",
+        "modelos_url": "https://api-docs.deepseek.com/quick_start/pricing",
+        "pasos": [
+            "Crea cuenta en platform.deepseek.com",
+            "API keys → Create new API key",
+            "Copia la key y pegala en 'API Token'",
+            "Recarga saldo (muy barato)",
+        ],
+        "gratis": False,
+    },
+    "ollama": {
+        "nombre": "Ollama (LOCAL, $0)",
+        "token_url": "https://ollama.com/download",
+        "docs_url": "https://github.com/ollama/ollama/blob/main/README.md",
+        "modelos_url": "https://ollama.com/library",
+        "pasos": [
+            "Instala: winget install Ollama.Ollama (o descarga de ollama.com)",
+            "El server arranca solo en http://localhost:11434",
+            "Descarga un modelo: ollama pull llama3.2:3b",
+            "NO necesita token. Deja 'API Token' vacio.",
+            "Base URL solo si Ollama esta en otra maquina.",
+        ],
+        "gratis": True,
+    },
 }
 
 st.title("🎓 Class Analyzer — debilidades en grabaciones de clase")
@@ -38,6 +95,54 @@ st.caption(
     "Deteccion local (ffmpeg, sin costo) + IA pluggable para el reporte. "
     "Detecta p.ej. >10 min de video compartido sin clase activa."
 )
+
+with st.expander("📖 Cómo instalar y cómo funciona"):
+    st.markdown(
+        """
+### ¿Qué hace?
+Analiza una grabación de clase y detecta debilidades. Caso clave:
+**>10 min de video compartido donde el docente no dio clase activa.**
+
+### ¿Cómo funciona? (2 capas)
+1. **Detección local (sin IA, $0)** — `ffmpeg` + `numpy`:
+   - **VAD por silencio**: cuánto habla el docente.
+   - **Movimiento entre frames**: detecta video reproduciéndose en pantalla.
+   - **Motor de reglas**: marca segmentos sospechosos.
+2. **IA (opcional, pluggable)** — solo redacta el reporte sobre las señales
+   ya detectadas. El video **nunca** se manda a la IA (sería caro): solo texto.
+
+### Instalar la aplicación
+```bash
+# 1) ffmpeg (obligatorio)
+winget install Gyan.FFmpeg          # Windows
+sudo apt install ffmpeg             # Linux
+
+# 2) Dependencias Python
+pip install -r requirements.txt
+
+# 3) (opcional) transcript local
+pip install faster-whisper
+
+# 4) Correr
+streamlit run app.py
+```
+Repo: https://github.com/hllerenaa/class-analyzer ·
+Guía de producción: ver `DEPLOYMENT.md` · Guía de IA: ver `GUIA_IA.md`
+
+### Instalar IA local (Ollama, $0)
+```bash
+winget install Ollama.Ollama        # Windows  (o https://ollama.com/download)
+curl -fsSL https://ollama.com/install.sh | sh   # Linux
+ollama pull llama3.2:3b             # descarga el modelo (~2 GB)
+```
+El server queda en `http://localhost:11434`. En el sidebar elige provider
+`ollama`, sin token. Listo.
+
+### Usar IA en la nube (token)
+En el sidebar elige el provider y abre **"Cómo obtener token"** — ahí está
+el link directo para generar tu API key de cada proveedor.
+"""
+    )
 
 # ---------------- Sidebar config ----------------
 with st.sidebar:
@@ -48,9 +153,26 @@ with st.sidebar:
         ["ollama", "claude", "gemini", "deepseek"],
         help="ollama = local/gratis. Otros requieren token.",
     )
+
+    info = PROVIDER_INFO[provider]
+    badge = "🟢 GRATIS" if info["gratis"] else "💲 De pago"
+    st.caption(f"**{info['nombre']}** — {badge}")
+    with st.expander("ℹ️ Cómo obtener token / conectar", expanded=(provider != "ollama")):
+        if provider == "ollama":
+            st.markdown("**No necesita token.** Es local. Pasos:")
+        else:
+            st.markdown(f"[🔑 Generar API token aquí]({info['token_url']})")
+        for i, p in enumerate(info["pasos"], 1):
+            st.markdown(f"{i}. {p}")
+        st.markdown(
+            f"[📄 Docs API]({info['docs_url']}) · "
+            f"[📦 Modelos disponibles]({info['modelos_url']})"
+        )
+
     api_key = st.text_input(
         "API Token", type="password",
         help="No requerido para ollama local.",
+        disabled=(provider == "ollama"),
     )
     model = st.text_input("Modelo", value=MODEL_HINTS[provider])
     base_url = st.text_input(
