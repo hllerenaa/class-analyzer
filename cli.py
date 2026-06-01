@@ -14,12 +14,12 @@ try:
 except Exception:
     pass
 
-from analyzer import pipeline
+from analyzer import pipeline, downloader
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("video")
+    ap.add_argument("video", help="ruta local o URL (YouTube/Drive)")
     ap.add_argument("--ai", default=None, help="claude|gemini|deepseek|ollama")
     ap.add_argument("--key", default="")
     ap.add_argument("--model", default="")
@@ -44,11 +44,13 @@ def main():
         },
     }
 
+    log = lambda m: print("  ..", m)
+    video_path = downloader.resolve_source(args.video, log=log)
     res = pipeline.analyze(
-        args.video, cfg,
+        video_path, cfg,
         want_transcript=args.transcript,
         ai_enabled=bool(args.ai),
-        log=lambda m: print("  ..", m),
+        log=log,
     )
 
     print("\n=== METRICAS ===")

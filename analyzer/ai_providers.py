@@ -6,7 +6,8 @@ Todos via HTTP (requests), sin SDKs.
 import json
 import requests
 
-TIMEOUT = 120
+TIMEOUT = 180          # nube (Claude/Gemini/DeepSeek)
+OLLAMA_TIMEOUT = 600   # local: 1a llamada carga el modelo a RAM (lento en CPU)
 
 
 def _claude(api_key, model, prompt, base_url):
@@ -63,11 +64,12 @@ def _ollama(api_key, model, prompt, base_url):
     base = base_url or "http://localhost:11434"
     url = base + "/api/chat"
     body = {
-        "model": model or "llama3.1",
+        "model": model or "llama3.2:3b",
         "messages": [{"role": "user", "content": prompt}],
         "stream": False,
+        "options": {"num_predict": 900},  # limita salida = mas rapido
     }
-    r = requests.post(url, json=body, timeout=TIMEOUT)
+    r = requests.post(url, json=body, timeout=OLLAMA_TIMEOUT)
     r.raise_for_status()
     return r.json()["message"]["content"]
 
