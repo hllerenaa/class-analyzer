@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Config con secretos
+config.json
+*.key
+.env
+
+# Datos / salidas
+*.mp4
+*.mov
+*.mkv
+*.avi
+drondeploy_frames/
+reporte_*.md
+analisis.json
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,14 @@
+{
+  "ffmpeg_dir": "",
+  "provider": "ollama",
+  "model": "llama3.1",
+  "api_key": "",
+  "base_url": "",
+  "thresholds": {
+    "min_flag_minutes": 10,
+    "motion_playback": 12.0,
+    "speech_ratio_low": 0.15,
+    "silence_noise_db": -30,
+    "silence_min_dur": 0.5
+  }
+}

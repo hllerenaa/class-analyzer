@@ -1,0 +1,22 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama:/root/.ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - PYTHONIOENCODING=utf-8
+    ports:
+      - "127.0.0.1:8501:8501"
+
+volumes:
+  ollama:
